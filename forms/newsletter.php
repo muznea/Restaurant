@@ -1,33 +1,38 @@
 <?php
+  header('Content-Type: text/plain; charset=utf-8');
 
-  //real receiving email address
-  $receiving_email_address = 'muznea123@gmail.com';
-
-  if( file_exists($php_email_form = '../assets/vendor/php-email-form/php-email-form.php' )) {
-    include( $php_email_form );
-  } else {
-    die( 'Unable to load the "PHP Email Form" Library!');
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo 'Method Not Allowed';
+    exit;
   }
 
-  $contact = new PHP_Email_Form;
-  $contact->ajax = true;
-  
-  $contact->to = $receiving_email_address;
-  $contact->from_name = $_POST['email'];
-  $contact->from_email = $_POST['email'];
-  $contact->subject ="New Subscription: " . $_POST['email'];
+  $email = trim($_POST['email'] ?? '');
 
-  // Uncomment below code if you want to use SMTP to send emails. You need to enter your correct SMTP credentials
-  
-  $contact->smtp = array(
-    'host' => 'example.com',
-    'username' => 'example',
-    'password' => 'pass',
-    'port' => '587'
-  );
-  
+  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    echo 'Please enter a valid email address.';
+    exit;
+  }
 
-  $contact->add_message( $_POST['email'], 'Email');
+  $to = 'muznea123@gmail.com';
+  $subject = 'New Newsletter Subscription';
+  $message = "A new subscriber joined the newsletter.\n\nEmail: $email\n";
+  $headers = [
+    'From: ' . $email,
+    'Reply-To: ' . $email,
+    'X-Mailer: PHP/' . phpversion(),
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8'
+  ];
 
-  echo $contact->send();
+  $sent = mail($to, $subject, $message, implode("\r\n", $headers));
+
+  if (!$sent) {
+    http_response_code(500);
+    echo 'Failed to subscribe. Please try again later.';
+    exit;
+  }
+
+  echo 'OK';
 ?>
